@@ -1,0 +1,347 @@
+{
+  "name": "YouTube Shorts — Daily Auto Publisher",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "everyDay",
+        "time": "09:00",
+        "timezone": "UTC"
+      },
+      "name": "Cron Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const runId = new Date().toISOString().replace(/[:.]/g,'-');\nitems[0].json.run_id = runId;\nitems[0].json.created_at = new Date().toISOString();\nreturn items;"
+      },
+      "name": "Create Run ID",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/chat/completions",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer {{$env.OPENAI_API_KEY}}",
+          "Content-Type": "application/json"
+        },
+        "options": {},
+        "bodyParametersJson": "={\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [\n    {\"role\":\"system\",\"content\":\"You are a short-form video assistant. ALWAYS output valid JSON only (no explanation). Follow schema: {\\\"topic\\\":string,\\\"script\\\":string (30-60s),\\\"segments\\\":[{\\\"visual_query\\\":string,\\\"duration_seconds\\\":number,\\\"caption\\\":string}],\\\"title\\\":string (<=70),\\\"description\\\":string,\\\"tags\\\":[] }\"},\n    {\"role\":\"user\",\"content\":\"Create a single YouTube Short script + metadata for today. Output only JSON. Keep script 30-60 seconds. Also produce 2-3 segments with visual queries.\"}\n  ],\n  \"temperature\": 0.6,\n  \"max_tokens\": 700\n}"
+      },
+      "name": "Prompt Agent (OpenAI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        750,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "/* Parse OpenAI response and attach parsedJSON to output */\nconst raw = items[0].json.body;\nlet content = '';\nif(raw && raw.choices && raw.choices.length){\n  content = raw.choices[0].message.content;\n}\n// Attempt to parse JSON safely\ntry{\n  const parsed = JSON.parse(content);\n  items[0].json.prompt_output = parsed;\n  items[0].json._raw_llm = content;\n}catch(err){\n  throw new Error('Failed to parse LLM JSON output: ' + err.message + '\\nLLM output:\\n' + content);\n}\nreturn items;"
+      },
+      "name": "Parse LLM Output",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "binaryPropertyName": "",
+        "bucketName": "={{$env.S3_BUCKET}}",
+        "fileName": "={{$json.run_id}}/prompt.json",
+        "fileContent": "={{$json._raw_llm}}"
+      },
+      "name": "S3: Save Prompt JSON",
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/{{YOUR_VOICE_ID}}/stream",
+        "method": "POST",
+        "headers": {
+          "xi-api-key": "{{$env.ELEVENLABS_API_KEY}}",
+          "Content-Type": "application/json"
+        },
+        "responseFormat": "file",
+        "bodyParametersJson": "={\n  \"text\": $json.prompt_output.script,\n  \"voice_settings\": {\"stability\": 0.3, \"similarity_boost\": 0.7}\n}"
+      },
+      "name": "TTS (ElevenLabs)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "binaryPropertyName": "data",
+        "bucketName": "={{$env.S3_BUCKET}}",
+        "fileName": "={{$json.run_id}}/voice.mp3"
+      },
+      "name": "S3: Save Voice",
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "/* Build ffmpeg input file list and simple subtitle SRT if needed. We assume visuals are placeholders (replace with real assets or image generation API). */\nconst runId = $json.run_id;\nconst audioKey = `${runId}/voice.mp3`;\n// For demo we create two placeholder image files names - in production, replace with actual S3 downloads or image generation\nitems[0].json.video_build = {\n  \"audio_s3_key\": audioKey,\n  \"images\": [\n    {\"s3_key\": `${runId}/visual_1.jpg`, \"duration\": 8},\n    {\"s3_key\": `${runId}/visual_2.jpg`, \"duration\": 12}\n  ],\n  \"out_local_path\": `/tmp/${runId}.mp4`\n};\nreturn items;"
+      },
+      "name": "Prepare Video Build",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1750,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "command": "bash -lc \"set -euo pipefail\n# Assumes ffmpeg installed on the runner and that S3 files are downloaded into /tmp using awscli or the S3 node; For a simple demo use placeholder images already on runner.\n# Example ffmpeg command to create vertical 1080x1920 short from one image and audio (replace with a more advanced edit pipeline for segments):\nffmpeg -y -loop 1 -i /tmp/visual_1.jpg -i /tmp/voice.mp3 -c:v libx264 -t 00:00:20 -vf \\\"scale=1080:1920,setsar=1\\\" -c:a aac -b:a 128k -shortest /tmp/{{ $json.run_id }}.mp4\n\""
+      },
+      "name": "Build Video (ffmpeg)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2000,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "binaryPropertyName": "",
+        "bucketName": "={{$env.S3_BUCKET}}",
+        "fileName": "={{$json.run_id}}/final_video.mp4",
+        "fileContent": "={{$binary.data}}"
+      },
+      "name": "S3: Save Final Video",
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        2250,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status",
+        "method": "POST",
+        "authentication": "oAuth2",
+        "oauth2": "youTubeOAuth2",
+        "options": {
+          "sendBinaryData": true
+        },
+        "binaryPropertyName": "",
+        "headers": {
+          "Content-Type": "multipart/related; boundary=--boundary"
+        },
+        "bodyParametersJson": "={\n  \"snippet\": {\n    \"title\": $json.prompt_output.title,\n    \"description\": $json.prompt_output.description,\n    \"tags\": $json.prompt_output.tags\n  },\n  \"status\": {\n    \"privacyStatus\": \"public\"\n  }\n}\n\n/* NOTE: n8n HTTP Request multipart upload to YouTube requires constructing the multipart body including binary data. In n8n use the YouTube node or pre-signed uploads if available. Replace this step with the native YouTube node or a small script that uses googleapis library and OAuth2 credentials. */"
+      },
+      "name": "YouTube Upload (placeholder)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        2500,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "={{$env.GOOGLE_SHEET_ID}}",
+        "range": "={{$env.GOOGLE_SHEET_NAME}}!A1:Z",
+        "valueInputMode": "RAW",
+        "data": [
+          {
+            "key": "values",
+            "value": "=[\n  [\n    $json.run_id,\n    $json.created_at,\n    $json.prompt_output.topic,\n    $json.prompt_output.title,\n    $json.prompt_output.description,\n    $json.prompt_output.tags.join(', '),\n    \"={{$env.S3_BASE_URL}}/{{$json.run_id}}/prompt.json\",\n    \"={{$env.S3_BASE_URL}}/{{$json.run_id}}/voice.mp3\",\n    \"={{$env.S3_BASE_URL}}/{{$json.run_id}}/final_video.mp4\",\n    '',\n    'success'\n  ]\n]"
+          }
+        ]
+      },
+      "name": "Google Sheets: Append Audit Row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        2750,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "no-reply@yourdomain.com",
+        "toEmail": "you@yourdomain.com",
+        "subject": "={{ '[Short Published] ' + $json.prompt_output.title + ' — ' + $json.created_at }}",
+        "text": "Run: {{$json.run_id}}\nTitle: {{$json.prompt_output.title}}\nWatch: https://youtu.be/{{ $json.videoId || 'VIDEO_ID_PLACEHOLDER' }}\nAudit: {{$env.GOOGLE_SHEET_URL || 'SHEET_URL_PLACEHOLDER'}}\nStatus: success",
+        "options": {}
+      },
+      "name": "SendGrid: Success Email",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        3000,
+        360
+      ]
+    }
+  ],
+  "connections": {
+    "Cron Trigger": {
+      "main": [
+        [
+          {
+            "node": "Create Run ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Run ID": {
+      "main": [
+        [
+          {
+            "node": "Prompt Agent (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prompt Agent (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Parse LLM Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse LLM Output": {
+      "main": [
+        [
+          {
+            "node": "S3: Save Prompt JSON",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "TTS (ElevenLabs)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "S3: Save Prompt JSON": {
+      "main": [
+        [
+          {
+            "node": "Prepare Video Build",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TTS (ElevenLabs)": {
+      "main": [
+        [
+          {
+            "node": "S3: Save Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "S3: Save Voice": {
+      "main": [
+        [
+          {
+            "node": "Prepare Video Build",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Video Build": {
+      "main": [
+        [
+          {
+            "node": "Build Video (ffmpeg)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Video (ffmpeg)": {
+      "main": [
+        [
+          {
+            "node": "S3: Save Final Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "S3: Save Final Video": {
+      "main": [
+        [
+          {
+            "node": "YouTube Upload (placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube Upload (placeholder)": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Append Audit Row",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "SendGrid: Success Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}
