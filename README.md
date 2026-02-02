@@ -33,7 +33,7 @@ This system uses:
 
 ### Content Creation Workflow
 
-![Content Creation Workflow](./docs/content-creation-workflow.png)
+![Content Creation Workflow]([./docs/content-creation-workflow.png](https://github.com/saurabhsharmaj/openai-youtube-short-automation/blob/main/_-%20visual%20selection%20(2).png))
 
 **Key Concept:**  
 n8n acts as the **orchestrator**, coordinating multiple specialized agents in a deterministic sequence.
