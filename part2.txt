@@ -1,5 +1,5 @@
 {
-  "name": "S3 to YouTube Upload",
+  "name": "S3 to YouTube Upload v2",
   "nodes": [
     {
       "parameters": {},
@@ -55,7 +55,7 @@
       "id": "YouTubeUpload",
       "name": "Upload to YouTube",
       "type": "n8n-nodes-base.youtube",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [860, 300],
       "credentials": {
         "youtubeOAuth2Api": {
@@ -67,13 +67,37 @@
   ],
   "connections": {
     "Manual Trigger": {
-      "main": [[{ "node": "Download Video from S3", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Download Video from S3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Download Video from S3": {
-      "main": [[{ "node": "Set Metadata", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Set Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Set Metadata": {
-      "main": [[{ "node": "Upload to YouTube", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Upload to YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   }
 }
