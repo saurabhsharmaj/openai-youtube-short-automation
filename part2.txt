@@ -3,28 +3,33 @@
   "nodes": [
     {
       "parameters": {},
-      "id": "ManualTrigger",
-      "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [200, 300]
+      "position": [
+        -688,
+        -160
+      ],
+      "id": "d6dc4fcd-5376-4768-a7b6-ec42facc0f94",
+      "name": "When clicking ‘Execute workflow’"
     },
     {
       "parameters": {
-        "operation": "download",
-        "bucketName": "YOUR_S3_BUCKET_NAME",
-        "fileKey": "path/to/video.mp4",
+        "bucketName": "cukfeed",
+        "fileKey": "youtube-shorts/earth.mp4",
         "binaryPropertyName": "video"
       },
-      "id": "S3Download",
+      "id": "60555435-ea55-4785-adae-bacd3e4c426d",
       "name": "Download Video from S3",
       "type": "n8n-nodes-base.awsS3",
       "typeVersion": 1,
-      "position": [420, 300],
+      "position": [
+        -400,
+        -144
+      ],
       "credentials": {
         "aws": {
-          "id": "AWS_CREDENTIAL_ID",
-          "name": "AWS Account"
+          "id": "UdJGV3d3VvPjTP9i",
+          "name": "AWS (IAM) account"
         }
       }
     },
@@ -32,41 +37,60 @@
       "parameters": {
         "values": {
           "string": [
-            { "name": "title", "value": "S3 Uploaded Video" },
-            { "name": "description", "value": "Uploaded automatically from AWS S3 using n8n" },
-            { "name": "privacyStatus", "value": "private" }
+            {
+              "name": "title",
+              "value": "S3 Uploaded Video"
+            },
+            {
+              "name": "description",
+              "value": "Uploaded automatically from AWS S3 using n8n"
+            },
+            {
+              "name": "privacyStatus",
+              "value": "private"
+            }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "SetMetadata",
+      "id": "256ec502-7815-40de-a7bc-170487f0a450",
       "name": "Set Metadata",
       "type": "n8n-nodes-base.set",
       "typeVersion": 2,
-      "position": [640, 300]
+      "position": [
+        -96,
+        -128
+      ]
     },
     {
       "parameters": {
+        "resource": "video",
         "operation": "upload",
+        "title": "={{ $json.title }}",
+        "regionCode": "IN",
+        "categoryId": "Uploaded automatically from AWS S3 using n8n",
         "binaryProperty": "video",
-        "title": "={{$json[\"title\"]}}",
-        "description": "={{$json[\"description\"]}}",
-        "privacyStatus": "={{$json[\"privacyStatus\"]}}"
+        "options": {}
       },
-      "id": "YouTubeUpload",
-      "name": "Upload to YouTube",
-      "type": "n8n-nodes-base.youtube",
-      "typeVersion": 2,
-      "position": [860, 300],
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        144,
+        -128
+      ],
+      "id": "243f97e4-b5b6-49bd-9d98-9cf820af6dcc",
+      "name": "Upload a video",
       "credentials": {
-        "youtubeOAuth2Api": {
-          "id": "YOUTUBE_CREDENTIAL_ID",
-          "name": "YouTube OAuth"
+        "youTubeOAuth2Api": {
+          "id": "bxIp8jyv7pV9YWiy",
+          "name": "YouTube account"
         }
       }
     }
   ],
+  "pinData": {},
   "connections": {
-    "Manual Trigger": {
+    "When clicking ‘Execute workflow’": {
       "main": [
         [
           {
@@ -92,12 +116,25 @@
       "main": [
         [
           {
-            "node": "Upload to YouTube",
+            "node": "Upload a video",
             "type": "main",
             "index": 0
           }
         ]
       ]
     }
-  }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "44276c6d-9d7d-4fe0-9d4d-eb3746c09730",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "760b3705a6a8f5da2d071400ef779e05df775c57945f356b3e85908595da880e"
+  },
+  "id": "5lQteXuIXINGVDB9",
+  "tags": []
 }
