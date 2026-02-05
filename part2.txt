@@ -1,0 +1,79 @@
+{
+  "name": "S3 to YouTube Upload",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "ManualTrigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "bucketName": "YOUR_S3_BUCKET_NAME",
+        "fileKey": "path/to/video.mp4",
+        "binaryPropertyName": "video"
+      },
+      "id": "S3Download",
+      "name": "Download Video from S3",
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 1,
+      "position": [420, 300],
+      "credentials": {
+        "aws": {
+          "id": "AWS_CREDENTIAL_ID",
+          "name": "AWS Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "title", "value": "S3 Uploaded Video" },
+            { "name": "description", "value": "Uploaded automatically from AWS S3 using n8n" },
+            { "name": "privacyStatus", "value": "private" }
+          ]
+        }
+      },
+      "id": "SetMetadata",
+      "name": "Set Metadata",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "binaryProperty": "video",
+        "title": "={{$json[\"title\"]}}",
+        "description": "={{$json[\"description\"]}}",
+        "privacyStatus": "={{$json[\"privacyStatus\"]}}"
+      },
+      "id": "YouTubeUpload",
+      "name": "Upload to YouTube",
+      "type": "n8n-nodes-base.youtube",
+      "typeVersion": 1,
+      "position": [860, 300],
+      "credentials": {
+        "youtubeOAuth2Api": {
+          "id": "YOUTUBE_CREDENTIAL_ID",
+          "name": "YouTube OAuth"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Download Video from S3", "type": "main", "index": 0 }]]
+    },
+    "Download Video from S3": {
+      "main": [[{ "node": "Set Metadata", "type": "main", "index": 0 }]]
+    },
+    "Set Metadata": {
+      "main": [[{ "node": "Upload to YouTube", "type": "main", "index": 0 }]]
+    }
+  }
+}
