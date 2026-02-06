@@ -1,0 +1,195 @@
+{
+  "name": "LLM-ELEVEN_LAB-S3-Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "text",
+              "value": "={{ $json.output[0].content[0].text }}"
+            },
+            {
+              "name": "filename",
+              "value": "=elevenlabs-{{$now}}.mp3"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6ac6dca8-48d9-4557-bba6-92d5bb87fd1b",
+      "name": "Set Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "sk_0cf15ce7ed4da03c873c312991a59ddba523ae7ac6d08964"
+            },
+            {
+              "name": "Accept",
+              "value": "audio/mpeg"
+            },
+            {
+              "name": "Accept",
+              "value": "audio/mpeg"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"{{ $json.output[0].content[0].text }}\",\n  \"model_id\": \"eleven_turbo_v2_5\",\n  \"voice_settings\": {\n    \"stability\": 0.5,\n    \"similarity_boost\": 0.5\n  }\n} ",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "id": "99892be7-7150-4281-813e-dd234ea396c1",
+      "name": "ElevenLabs TTS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        16,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "cukfeed",
+        "fileName": "={{$json.filename}}",
+        "additionalFields": {}
+      },
+      "id": "da3090e2-e503-4890-86b6-662325f91c08",
+      "name": "Upload to S3",
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 1,
+      "position": [
+        224,
+        -80
+      ],
+      "credentials": {
+        "aws": {
+          "id": "UdJGV3d3VvPjTP9i",
+          "name": "AWS (IAM) account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -688,
+        -160
+      ],
+      "id": "e996a56c-2dcd-4b2c-ba42-257a7d896210",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini-2025-04-14",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI-2025-04-14"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "Generate a joke in Hindi , this don't have any new line character \\n or any special due to json parsing issue occur"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        -480,
+        -80
+      ],
+      "id": "b899da09-54bb-4ef8-a628-d45c280d7cb3",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "mkcT4wBcA6h7ZKxU",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Set Input": {
+      "main": [
+        [
+          {
+            "node": "ElevenLabs TTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ElevenLabs TTS": {
+      "main": [
+        [
+          {
+            "node": "Upload to S3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Set Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "0a8ac4fe-fb19-45c8-970c-b9f91bbfc225",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "760b3705a6a8f5da2d071400ef779e05df775c57945f356b3e85908595da880e"
+  },
+  "id": "yvdoEyN6FAtsmQClpfeMu",
+  "tags": []
+}
