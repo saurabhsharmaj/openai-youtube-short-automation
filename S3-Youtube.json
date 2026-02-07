@@ -1,0 +1,63 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "7abe9f06-4de4-4ab6-8c44-71de33009bce",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "bucketName": "cukfeed",
+        "fileKey": "youtube-shorts/earth.mp4"
+      },
+      "id": "7dd6fbc3-e140-49a6-a763-5ff3b9eb89db",
+      "name": "S3 Download",
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ],
+      "credentials": {
+        "s3": {
+          "id": "OvJrvEyFbwWdwRf3",
+          "name": "S3 account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "S3 Download",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a2c0752e-67a3-4bb2-88ed-49d807aaa52c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4839aecfa348c1c29b539592fd7cf38b8b5c961583d567d4c24211cf7d7a0fe9"
+  },
+  "id": "Sta_YYw0IQXIU5MSmCWgG",
+  "tags": []
+}
