@@ -1,0 +1,98 @@
+{
+  "name": "S3-youtube.",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "b6ef750e-0cae-46a6-b8b1-81c2ffe445d4",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "bucketName": "cukfeed",
+        "fileKey": "youtube-shorts/earth.mp4"
+      },
+      "id": "1e7ff449-fec5-46e9-a52c-59c991bd181b",
+      "name": "S3 Download",
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        -64
+      ],
+      "credentials": {
+        "s3": {
+          "id": "OvJrvEyFbwWdwRf3",
+          "name": "S3 account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "my-earth",
+        "regionCode": "IN",
+        "categoryId": "22",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        64,
+        -64
+      ],
+      "id": "f7b966af-0454-41ee-8ed3-52f068a70b6d",
+      "name": "Upload a video",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "PtLEviBU8XDp0Mh5",
+          "name": "YouTube account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "S3 Download",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "S3 Download": {
+      "main": [
+        [
+          {
+            "node": "Upload a video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "d7f97698-d5ef-41f1-bd3d-4f50cdc0c74c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4839aecfa348c1c29b539592fd7cf38b8b5c961583d567d4c24211cf7d7a0fe9"
+  },
+  "id": "bCPIYRXSAuyHgvk0u0wHI",
+  "tags": []
+}
