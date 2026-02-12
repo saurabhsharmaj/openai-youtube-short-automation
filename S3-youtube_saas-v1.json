@@ -1,0 +1,438 @@
+{
+  "name": "S3-youtube.",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "12df6851-412f-454d-887e-b98badd6be53",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "Create a 1-minute educational video with a friendly, enthusiastic teacher avatar standing in a modern classroom.\n\nThe avatar is teaching students about “A Funny joke” in a fun and engaging way.\n\nScript & Flow:\n\nStart with the avatar smiling and saying:\n“Hi All, I will tell you one joke”\n\n\n\nAvatar Style:\n\nFriendly teacher\n\nClear expressions and hand gestures\n\nEnergetic but calm voice\n\nTone:\n\nFun, curious, educational\n\nSuitable for school students\n\nDuration: Around 60 seconds\n\nOutput: High-quality educational explainer video with synchronized avatar speech and visuals.\n-remove all \\n or any occurance of \\n and double quote in between the text.it break my json parsing.\nReference request generate into following format other wise it send bad request: ```\n{\n  \"caption\": false,\n  \"title\": \"My Title\",\n  \"callback_id\": null,\n  \"video_inputs\": [\n    {\n      \"character\": {\n        \"type\": \"avatar\",\n        \"avatar_id\": \"Adriana_Business_Side_public\",\n        \"scale\": 0.93,\n        \"avatar_style\": \"circle\",\n        \"offset\": {\n          \"x\": 0,\n          \"y\": 0\n        },\n        \"matting\": false,\n        \"circle_background_color\": \"#FFFFFF\"\n      },\n      \"voice\": {\n        \"type\": \"text\",\n        \"voice_id\": \"73c0b6a2e29d4d38aca41454bf58c955\",\n        \"input_text\": “<“PROMPT>,\n        \"speed\": 1,\n        \"pitch\": 10,\n        \"emotion\": \"Friendly\",\n        \"locale\": \"en-US\",\n        \"elevenlabs_settings\": {\n          \"model\": \"eleven_monolingual_v1\",\n          \"similarity_boost\": \"0.3\",\n          \"stability\": \"0.9\",\n          \"style\": \"0.5\"\n        }\n      },\n      \"background\": {\n        \"type\": \"color\",\n        \"value\": \"#87CEEB\"\n      },\n      \"text\": {\n        \"type\": \"text\",\n        \"text\": “<PROMPT>“,\n        \"font_family\": \"Arial\",\n        \"font_size\": 10,\n        \"font_weight\": \"bold\",\n       \"position\": {\n          \"x\": 0.5,\n          \"y\": 0.5\n        },\n        \"text_align\": \"left\",\n        \"line_height\": 1\n      }\n    }\n  ],\n  \"dimension\": {\n    \"width\": 1280,\n    \"height\": 720\n  },\n  \"folder_id\": null,\n  \"callback_url\": null\n}\n\n```"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        -144,
+        32
+      ],
+      "id": "27e58a96-28c3-4387-8b5d-d9970e9f580c",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "d19t8i3lHH5Jo0tf",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ac8ba79d-130a-4245-947d-dd27b43bd82a",
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        880,
+        -48
+      ],
+      "id": "d48f4b55-ad89-4769-8ccf-7aa48c9691f3",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.heygen.com/v2/video/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "sk_V2_hgu_k2pd09pg5vE_UMHBUiKo1xwBpRIC20FoRRja2Mk2gsxV"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        432,
+        32
+      ],
+      "id": "3ff49f46-0f26-413a-a53b-2b086ab2afa9",
+      "name": "Request to Convert LLM to Video"
+    },
+    {
+      "parameters": {
+        "url": "https://api.heygen.com/v1/video_status.get",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "video_id",
+              "value": "={{ $json.data.video_id }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "sk_V2_hgu_k2pd09pg5vE_UMHBUiKo1xwBpRIC20FoRRja2Mk2gsxV"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        656,
+        32
+      ],
+      "id": "7f7e1865-bc28-43da-813b-c9f1471e71e0",
+      "name": "Check the Video Status"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1104,
+        144
+      ],
+      "id": "11bbcf1c-13b5-4007-b16f-8072f010852c",
+      "name": "Wait Until Video Not Ready",
+      "webhookId": "c29369af-3c53-4433-bf77-3a6e7b1f8f97"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data.video_url }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "Expires",
+              "value": "1771498456"
+            },
+            {
+              "name": "Signature",
+              "value": "n7QUIIHgsh5UdRiDfcVo6V1oWWvklRVQE7wi1TqWQhssB3tFz9KqvWTQ6TyJIc4xqfKHa1mNxmjIHACoSWwPFVd3P7VFdHWECXjHNLvF-ZeHe9WD-2evIlJzZpg6J3XM84VywEclM1ZIZzeVo9QtN0CwVD5yLUS0I77TzP0gCznHRRf4~8834DUhT6yDd4NGzSaOMcCH9s7zjfK1DNbX1oOdka2SpFnfhPMX2ZXIaJy5hP~vXrua4Jg4ByeCYuVs5JIt~zdeuMte6Hp~dGluF5Mlg-qUqUG0gQrNG0S2NUC3NjpbJYegsu9l8JcGF9oTDV8LQos7M5Z~cos~WHkrBw__"
+            },
+            {
+              "name": "Key-Pair-Id",
+              "value": "K38HBHX5LX3X2H"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1104,
+        -144
+      ],
+      "id": "feed4412-41b4-48f6-b668-f1b2e8fa928d",
+      "name": "Extract Binary Data"
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "cukfeed",
+        "fileName": "={{ $json.data.id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        -240
+      ],
+      "id": "956734f4-8642-47ad-9676-5816b27e36f8",
+      "name": "Upload Video to s3",
+      "credentials": {
+        "aws": {
+          "id": "atA07MQIl9BDcZbx",
+          "name": "AWS (IAM) account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $json.data.id }}.mp4",
+        "regionCode": "IN",
+        "categoryId": "28",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        -48
+      ],
+      "id": "2f8ebb75-040a-41ac-824b-56adce7cad9f",
+      "name": "Upload a Video",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "Ku3se9fNYiyNgbgj",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "jagdishkumawat07@gmail.com",
+        "subject": "=Le beta ban gya.. {{ $json.uploadId }}",
+        "message": "My Video uploaded on my channel.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1552,
+        -48
+      ],
+      "id": "1fb31133-b71e-43c1-a1ac-502c0cc3c0cb",
+      "name": "Send a message",
+      "webhookId": "4814b2da-fe7b-4993-b5c5-baeb3510c70d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ySpib3F23xR1aZBP",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ $json.output[0].content[0].text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        32
+      ],
+      "id": "d76bf1ac-8a09-4b20-bebc-ea0f3c660b1b",
+      "name": "Extract Prompt"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\n// Extract ID from input\nconst videoId = items[0]?.json?.data?.id ?? null;\nconst error = items[0]?.json?.data?.error ?? null;\n\n// Return required structure\nreturn [\n  {\n    json: {\n      error: error,\n      data: {\n        video_id: videoId\n      }\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        224
+      ],
+      "id": "d24f8152-1925-4610-b430-b31e325fa821",
+      "name": "Prepare the request body"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Extract Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Extract Binary Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait Until Video Not Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request to Convert LLM to Video": {
+      "main": [
+        [
+          {
+            "node": "Check the Video Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the Video Status": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Until Video Not Ready": {
+      "main": [
+        [
+          {
+            "node": "Prepare the request body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Binary Data": {
+      "main": [
+        [
+          {
+            "node": "Upload Video to s3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload a Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Video to s3": {
+      "main": [
+        []
+      ]
+    },
+    "Upload a Video": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Prompt": {
+      "main": [
+        [
+          {
+            "node": "Request to Convert LLM to Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare the request body": {
+      "main": [
+        [
+          {
+            "node": "Check the Video Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "af1a426e-5682-4ed8-b442-1e68cca6d5d6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1573f0c4c4e1e392936e370ac55822c156bcb4873466a842fa3b4edae01087a5"
+  },
+  "id": "Zig7nezb9tdhX2pT",
+  "tags": []
+}
